@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from customtkinter import CTkImage
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageFilter
 from tkinter import filedialog
 
 from buttonFrame import ButtonFrame
@@ -47,6 +47,49 @@ class App(ctk.CTk):
           disp_img.thumbnail((500,500))
           self.tk_img = CTkImage(light_image=disp_img, size=disp_img.size)
           self.canvas.configure(image=self.tk_img)
+          
+    def apply_edits(self, edits):
+        if not self.img:
+            return
+
+        img = self.img.copy()
+
+        # Apply brightness
+        enhancer = ImageEnhance.Brightness(img)
+        img = enhancer.enhance(edits["Brightness"])
+
+        # Apply contrast
+        enhancer = ImageEnhance.Contrast(img)
+        img = enhancer.enhance(edits["Contrast"])
+
+        # Exposure - approximate by adjusting brightness again
+        enhancer = ImageEnhance.Brightness(img)
+        img = enhancer.enhance(edits["Exposure"])
+
+        # Saturation
+        enhancer = ImageEnhance.Color(img)
+        img = enhancer.enhance(edits["Saturation"])
+
+        # Sharpness
+        enhancer = ImageEnhance.Sharpness(img)
+        img = enhancer.enhance(edits["Sharpness"])
+
+        # Highlights - no direct PIL method; approximate by adjusting brightness of bright areas:
+        # For a simple approach, let's blend with a brightened version controlled by Highlights slider
+        if edits["Highlights"] > 0:
+            bright = img.point(lambda p: min(255, int(p * (1 + edits["Highlights"])))
+                              )
+            img = Image.blend(img, bright, alpha=0.5)
+
+        self.edited_img = img
+        self.show_edited_img()
+
+    def show_edited_img(self):
+        disp_img = self.edited_img.copy()
+        disp_img.thumbnail((500, 500))
+        self.tk_img = CTkImage(light_image=disp_img, size=disp_img.size)
+        self.canvas.configure(image=self.tk_img)
+        
           
     
           
